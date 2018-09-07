@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--日志级别以及优先级排序: OFF > FATAL > ERROR > WARN > INFO > DEBUG > TRACE > AL-->
+<configuration status="WARN" monitorInterval="30">
+    <Properties>
+        <Property name="LOG_HOME">C:\web_home\java8_advance\logs</Property>
+        <Property name="FILE_NAME">java8_advance</Property>
+        <Property name="pattern">%d{yyyy-MM-dd HH:mm:ss}  [%l]  %-5level %highlight{%M -- %msg%xEx%n}</Property>
+    </Properties>
+
+    <Appenders>
+
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%highlight{${pattern}}"/>
+        </Console>
+
+        <!--文件会打印出所有信息，这个log每次运行程序会自动清空，由append属性决定，这个也挺有用的，适合临时测试用-->
+        <File name="log" fileName="log/test.log" append="false">
+            <PatternLayout pattern="${pattern}"/>
+        </File>
+        <!-- 这个会打印出所有的info及以下级别的信息，每次大小超过size，
+        则这size大小的日志会自动存入按年份-月份建立的文件夹下面并进行压缩，作为存档-->
+        <RollingFile name="RollingFileInfo" fileName="${LOG_HOME}/INFO/info.log"
+                                     filePattern="${LOG_HOME}/${date:yyyy-MM}/INFO/info-%d{yyyy-MM-dd}-%i.log.gz">
+            <Filters>
+                <!--控制台只输出level及以上级别的信息（onMatch），其他的直接拒绝（onMismatch）-->
+                <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+                <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL"/>
+            </Filters>
+            <PatternLayout pattern="${pattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"  modulate="true"/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="20">
+                <Delete basePath="${LOG_HOME}" maxDepth="1">
+                    <IfFileName glob="info-*.log.gz"></IfFileName>
+                    <IfLastModified age="30d"></IfLastModified>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="RollingFileWarn" fileName="${LOG_HOME}/WARN/warn.log"
+                     filePattern="${LOG_HOME}/${date:yyyy-MM}/WARN/warn-%d{yyyy-MM-dd}-%i.log.gz">
+            <Filters>
+                <ThresholdFilter level="WARN" onMatch="ACCEPT" onMismatch="DENY"/>
+                <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="NEUTRAL"/>
+            </Filters>
+            <PatternLayout pattern="${pattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"  modulate="true"/>
+                <SizeBasedTriggeringPolicy size="50 MB"/>
+            </Policies>
+            <!-- DefaultRolloverStrategy属性如不设置，则默认为最多同一文件夹下7个文件，这里设置了20 -->
+            <DefaultRolloverStrategy max="20">
+                <Delete basePath="${LOG_HOME}" maxDepth="1">
+                    <IfFileName glob="warn-*.log.gz"></IfFileName>
+                    <IfLastModified age="30d"></IfLastModified>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="RollingFileError" fileName="${LOG_HOME}/ERROR/error.log"
+                     filePattern="${LOG_HOME}/${date:yyyy-MM}/ERROR/error-%d{yyyy-MM-dd}-%i.log.gz">
+            <ThresholdFilter level="ERROR"/>
+            <PatternLayout pattern="${pattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"  modulate="true"/>
+                <SizeBasedTriggeringPolicy size="50  MB"/>
+            </Policies>
+            <!-- 最多备份30天以内的日志，此处为策略限制，Delete中可以按自己需要用正则表达式编写 -->
+            <DefaultRolloverStrategy max="20">
+                <Delete basePath="${LOG_HOME}" maxDepth="1">
+                    <IfFileName glob="error-*.log.gz"></IfFileName>
+                    <IfLastModified age="30d"></IfLastModified>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+    </Appenders>
+    <!--然后定义logger，只有定义了logger并引入的appender，appender才会生效-->
+    <loggers>
+        <!--过滤掉spring和hibernate的一些无用的debug信息-->
+        <logger name="org.springframework" level="INFO"/>/
+        <logger name="org.mybatis" level="INFO"/>
+        <Logger name="com.java8" level="DEBUG" />
+        <root level="all">
+            <appender-ref ref="Console"/>
+            <appender-ref ref="RollingFileInfo"/>
+            <appender-ref ref="RollingFileWarn"/>
+            <appender-ref ref="RollingFileError"/>
+        </root>
+    </loggers>
+
+</configuration>
